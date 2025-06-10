@@ -1,0 +1,28 @@
+spring:
+  profiles:
+    active: local
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+  kafka:
+    template:
+      default-topic: bookstore-events
+    consumer:
+      bootstrap-servers: localhost:9092,localhost:9093,localhost:9094 
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      group-id: bookstore-consumer-group
+    admin:
+      properties:
+        bootstrap.servers: localhost:9092,localhost:9093,localhost:9094
+    producer:
+      bootstrap-servers: localhost:9092,localhost:9093,localhost:9094
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    jpa:
+      database: postgres
+      database-platform: org.hibernate.dialect.PostgreSQLDialect
+      show-sql: true
+      ddl-auto: update
+          
