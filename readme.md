@@ -343,3 +343,39 @@ spring:
 ---
 
 **Conclusão**: aplicando as práticas acima — múltiplos brokers, replicação adequada, `acks=all` + idempotência — seu sistema Kafka torna‑se resiliente, escalável e pronto para produção empresarial.
+
+## 3- Kafka: Batches, correlation ids e dead letters
+
+## 1 – Processamento em Lote Genérico (Batch)
+
+A seguir alinhamos cada etapa da trilha **“Simulando a geração de relatório”** com o que acontece teoricamente e como fica no Spring Boot + Kafka:
+
+| #  | Tópico do curso                       | Conceito na teoria                                                  | Tradução prática no Spring + Kafka                              |
+|----|---------------------------------------|---------------------------------------------------------------------|-----------------------------------------------------------------|
+| **1.1 • Batch genérico**               | Processar várias unidades (usuários) em um único fluxo              | Um listener Kafka consome N mensagens “user-report”, uma por usuário |
+| **1.2 • Fast Delegate (HTTP → Kafka)** | Responder rápido ao cliente e delegar trabalho pesado               | `GET /admin/generate-reports` envia 1 mensagem ao tópico “BATCH_DISPATCHER” |
+| **1.3 • Fan-out para cada usuário**    | Distribuir 1 tarefa única em N tarefas menores                      | Serviço “batch-dispatcher” lê todos os IDs e publica N mensagens “USER_READING_REPORT” |
+| **1.4 • Garantia de ordem por chave**  | Mesmo particionamento garante ordenação para cada entidade          | Usar `key = user.uuid` ao produzir, assim mensagens do mesmo usuário vão à mesma partição |
+| **1.5 • Processamento individual**     | Cada instância executa sua própria cópia de relatório               | `@KafkaListener(topics = "USER_READING_REPORT")` → copia template e faz append no arquivo |
+
+---
+
+### 2 – Definições Teóricas
+
+### 2.1 Batch Genérico  
+- **O que é?**: agrupar várias tarefas semelhantes e processá-las sequencial ou paralelamente como um único “lote”.  
+- **Por quê?**: maior eficiência, processamento em massa, desacoplamento de requisição/resposta.
+
+### 2.2 Fast Delegate  
+- **O que é?**: técnica de responder a uma requisição HTTP **imediatamente**, enquanto o trabalho pesado é feito **depois** de forma assíncrona.  
+- **Benefício**: evita timeouts, melhora latência percebida pelo cliente, permite retry via mensageria.
+
+### 2.3 Fan-out  
+- **O que é?**: converter uma **mensagem genérica** (ex: “gera todos os relatórios”) em **múltiplas mensagens específicas** (ex: “gera relatório do usuário X”).  
+- **Como?**: consumir a mensagem genérica e, em um loop, publicar uma mensagem por elemento do lote.
+
+### 2.4 Ordenação por Chave  
+- **O que é?**: no Kafka, mensagens com a mesma chave vão para a mesma partição, garantindo ordem de processamento.  
+- **Uso**: usar o UUID do usuário como chave ao produzir “user-report”.
+
+---

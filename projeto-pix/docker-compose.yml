@@ -1,0 +1,102 @@
+version: '3.8'
+
+networks:
+  pix-network:
+
+volumes:
+  postgres_data:
+
+services:
+  # 1) Banco
+  postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_DB: pix
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - pix-network
+
+  # 2) ZooKeeper
+  zookeeper:
+    image: confluentinc/cp-zookeeper:5.1.2
+    environment:
+      ZOOKEEPER_SERVER_ID: 1
+      ZOOKEEPER_CLIENT_PORT: '2181'
+    ports:
+      - '2181:2181'
+    networks:
+      - pix-network
+
+  # 3) Kafka Broker
+  kafka1:
+    image: confluentinc/cp-enterprise-kafka:5.1.2
+    depends_on:
+      - zookeeper
+    ports:
+      - '9092:9092'
+      - '29092:29092'
+    environment:
+      ZOOKEEPER_CLIENT_PORT: '2181'
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+
+      # Onde o broker escuta internamente e externamente
+      KAFKA_LISTENERS: >
+        PLAINTEXT://0.0.0.0:29092,
+        PLAINTEXT_HOST://0.0.0.0:9092
+
+      # Como o broker anuncia cada listener
+      KAFKA_ADVERTISED_LISTENERS: >
+        PLAINTEXT://kafka1:29092,
+        PLAINTEXT_HOST://localhost:9092
+
+      # Mapeia listener → protocolo (ambos PLAINTEXT)
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: >
+        PLAINTEXT:PLAINTEXT,
+        PLAINTEXT_HOST:PLAINTEXT
+
+      KAFKA_BROKER_ID: 1
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+    networks:
+      - pix-network
+
+  # 4) Producer App
+  producer_app:
+    build:
+      context: ./producer
+    container_name: spring_producer
+    depends_on:
+      - postgres
+      - kafka1
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/pix
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: password
+    ports:
+      - '8080:8080'
+    networks:
+      - pix-network
+
+  # 5) Consumer App
+  consumer_app:
+    build:
+      context: ./consumer
+    container_name: spring_consumer
+    depends_on:
+      - postgres
+      - kafka1
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/pix
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: password
+    ports:
+      - '8081:8080'
+    networks:
+      - pix-network
