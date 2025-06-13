@@ -21,8 +21,8 @@ spring:
     bootstrap-servers: kafka1:29092
 
     producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      # key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      # value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       acks: all
       enable-idempotence: true
 
@@ -30,18 +30,18 @@ spring:
       group-id: pix-group
       auto-offset-reset: earliest
 
-      # use o ErrorHandlingDeserializer para tratar falhas de desserialização
-      key-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      # # use o ErrorHandlingDeserializer para tratar falhas de desserialização
+      # key-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      # value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
 
-      properties:
-        # desserializadores reais
-        spring.deserializer.key.delegate.class: org.apache.kafka.common.serialization.StringDeserializer
-        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
+      # properties:
+      #   # desserializadores reais
+      #   spring.deserializer.key.delegate.class: org.apache.kafka.common.serialization.StringDeserializer
+      #   spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
 
-        # configurações do JsonDeserializer
-        spring.json.trusted.packages: com.pix.kafka.dto,com.pix.kafka.demo.domain
-        spring.json.value.default.type: com.pix.kafka.dto.PixDTO
+      #   # configurações do JsonDeserializer
+      #   spring.json.trusted.packages: com.pix.kafka.dto,com.pix.kafka.demo.domain
+      #   spring.json.value.default.type: com.pix.kafka.dto.PixDTO
 
     admin:
       properties:
