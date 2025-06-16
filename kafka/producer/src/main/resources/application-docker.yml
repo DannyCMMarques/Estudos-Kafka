@@ -1,0 +1,43 @@
+spring:
+  config:
+    activate:
+      on-profile: docker
+
+  # 1) Configuração do DataSource (Postgres)
+  datasource:
+    url: jdbc:postgresql://postgres:5432/biblioteca
+    username: postgres
+    password: password
+
+  # 2) Configuração do JPA/Hibernate
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+
+  # 3) Configuração do Kafka
+  kafka:
+    bootstrap-servers: kafka1:29092
+
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.IntegerSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+      enable-idempotence: true
+
+    consumer:
+      group-id: bookstore-group
+      key-deserializer: org.apache.kafka.common.serialization.IntegerDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      auto-offset-reset: earliest
+
+    admin:
+      properties:
+        bootstrap.servers: ${spring.kafka.bootstrap-servers}
+
+    template:
+      default-topic: bookstore-events
